@@ -6,6 +6,13 @@ url_geocodificacion = "https://graphhopper.com/api/1/geocode?"
 url_ruta = "https://graphhopper.com/api/1/route?"
 clave_api = "6e26b0cd-c83c-429a-8a1c-e32ac7ef822d" # Reemplaza con tu clave API
 
+# Diccionario  de los vehículos
+traduccion_vehiculos = {
+    "car": "auto",
+    "bike": "bicicleta",
+    "foot": "caminando"
+}
+
 def geocodificar(direccion, clave):
     while direccion == "":
         direccion = input("Ingrese la ubicación nuevamente: ")
@@ -38,51 +45,56 @@ def geocodificar(direccion, clave):
             print("Estado de la API de Geocodificación: " + str(estado_json) + "\nMensaje de Error: " + datos_json["message"])
     return estado_json, latitud, longitud, nueva_loc
 
-    
 while True:
     print("\n+-----------------------------------------")
     print("Tipos de transporte en Graphhopper:")
     print("--------------------------------------------")
-    print("car, bike, foot")
+    for clave, valor in traduccion_vehiculos.items():
+        print(valor)
     print("--------------------------------------------")
-    perfiles = ["car", "bike", "foot"]
+
     vehiculo = input("Seleccione el medio de transporte: ")
     if vehiculo == "salir" or vehiculo == "s":
         break
-    elif vehiculo in perfiles:
-        vehiculo = vehiculo
+    elif vehiculo in traduccion_vehiculos.values():
+        vehiculo_api = [clave for clave, valor in traduccion_vehiculos.items() if valor == vehiculo][0]
+        vehiculo_mostrar = vehiculo
     else:
-        vehiculo = "car" 
-        print("No se ingresó un perfil de vehículo válido. Usando el perfil de carro.") 
+        vehiculo_api = "car"
+        vehiculo_mostrar = traduccion_vehiculos["car"]
+        print("No se ingresó un perfil de vehículo válido. Usando el perfil de carro.")
+
     loc_inicio = input("Ubicación de inicio: ")
     if loc_inicio == "salir" or loc_inicio == "s":
-        break 
+        break
     inicio = geocodificar(loc_inicio, clave_api)
     print(inicio)
+
     loc_destino = input("Destino: ")
     if loc_destino == "salir" or loc_destino == "s":
-        break 
+        break
     destino = geocodificar(loc_destino, clave_api)
     print("-----------------------------------------------")
-    if inicio[0] == 200 and destino[0] == 200: 
+
+    if inicio[0] == 200 and destino[0] == 200:
         op = "&point=" + str(inicio[1]) + "%2C" + str(inicio[2])
         dp = "&point=" + str(destino[1]) + "%2C" + str(destino[2])
-        url_rutas = url_ruta + urllib.parse.urlencode({"key": clave_api, "vehicle": vehiculo, "locale": "es"}) + op + dp 
+        url_rutas = url_ruta + urllib.parse.urlencode({"key": clave_api, "vehicle": vehiculo_api, "locale": "es"}) + op + dp
         estado_rutas = requests.get(url_rutas).status_code
         datos_rutas = requests.get(url_rutas).json()
-        print("Estado de la API de Enrutamiento: " + str(estado_rutas) + "\nURL de la API de Enrutamiento:\n" + url_rutas) 
+        print("Estado de la API de Enrutamiento: " + str(estado_rutas) + "\nURL de la API de Enrutamiento:\n" + url_rutas)
         print("-----------------------------------------------------------")
-        print("Direcciones desde " + inicio[3] + " hasta " + destino[3] + " en " + vehiculo) 
+        print("Direcciones desde " + inicio[3] + " hasta " + destino[3] + " en " + vehiculo_mostrar)
         print("=-------------------------------------------------------------")
-        if estado_rutas == 200: 
+        if estado_rutas == 200:
             millas = (datos_rutas["paths"][0]["distance"]) / 1000 / 1.61
-            km = (datos_rutas["paths"][0]["distance"]) / 1000  
+            km = (datos_rutas["paths"][0]["distance"]) / 1000
             sec = int(datos_rutas["paths"][0]["time"] / 1000 % 60)
             min = int(datos_rutas["paths"][0]["time"] / 1000 / 60 % 60)
-            hr = int(datos_rutas["paths"][0]["time"] / 1000 / 60 / 60) 
-            print("Distancia Recorrida: {0:.1f} millas / {1:.1f} km".format(millas, km))   
-            print("Duración del Viaje: {0:02d}:{1:02d}:{2:02d}".format(hr, min, sec)) 
-            print("----------------------------------------------------------") 
+            hr = int(datos_rutas["paths"][0]["time"] / 1000 / 60 / 60)
+            print("Distancia Recorrida: {0:.1f} millas / {1:.1f} km".format(millas, km))
+            print("Duración del Viaje: {0:02d}:{1:02d}:{2:02d}".format(hr, min, sec))
+            print("----------------------------------------------------------")
             for i in range(len(datos_rutas["paths"][0]["instructions"])):
                 instruccion = datos_rutas["paths"][0]["instructions"][i]["text"]
                 distancia = datos_rutas["paths"][0]["instructions"][i]["distance"]
